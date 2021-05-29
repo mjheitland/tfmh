@@ -8,7 +8,7 @@ This Terraform project shows how to specify and deploy the following components:
 + 1 private default route table (will automatically be associated with all unattached subnets)
 + 1 keypair (first you have to run ssh-keygen in your home folder)
 + 1 ec2 micro instance per public subnet
-+ 1 application load balancer forwarding traffic to all public ec2 instances
++ 1 application load balancer forwarding traffic to all ASGs with public ec2 instances
 
 ## in .zshrc
 

@@ -27,15 +27,7 @@ output "rtprv_ids" {
 }
 
 #--- compute
-output "keypair_id" {
-  value = module.compute.keypair_id
-}
-output "server_ids" {
-  value = module.compute.server_ids
-}
-output "server_public_ips" {
-  value = module.compute.server_public_ips
-}
+
 output "alb_dns" {
   value = module.compute.alb_dns
 }

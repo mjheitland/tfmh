@@ -1,12 +1,9 @@
 #--- root/main.tf ---
-provider "aws" {
-  region = "eu-west-1"
-}
 
 # deploy networking resources
 module "networking" {
-  source        = "./networking"
-  
+  source = "./networking"
+
   project_name  = var.project_name
   vpc_cidr      = var.vpc_cidr
   subpub_cidrs  = var.subpub_cidrs
@@ -15,10 +12,11 @@ module "networking" {
   service_ports = var.service_ports
 }
 
-# Deploy Compute Resources
+# deploy compute resources
 module "compute" {
-  source          = "./compute"
-  
+  source = "./compute"
+
+  region          = var.region
   project_name    = var.project_name
   key_name        = var.key_name
   public_key_path = var.public_key_path

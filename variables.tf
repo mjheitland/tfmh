@@ -1,4 +1,8 @@
 #--- root/variables.tf
+variable "region" {
+  description = "AWS region"
+  type        = string
+}
 variable "project_name" {
   description = "project name is used as resource tag"
   type        = string
@@ -7,11 +11,11 @@ variable "vpc_cidr" {
   description = "separate vpc for this project"
   type        = string
 }
-variable "subpub_cidrs" { 
+variable "subpub_cidrs" {
   description = "cidr blocks for public subnets"
   type        = list(string)
 }
-variable "subprv_cidrs" { 
+variable "subprv_cidrs" {
   description = "cidr blocks for private subnets"
   type        = list(string)
 }

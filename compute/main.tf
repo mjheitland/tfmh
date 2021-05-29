@@ -55,8 +55,8 @@ resource "aws_autoscaling_group" "asg" {
     create_before_destroy = true
   }
 
-  vpc_zone_identifier       = var.subpub_ids
   name_prefix               = format("%s-${terraform.workspace}-", var.project_name)
+  vpc_zone_identifier       = var.subpub_ids
   max_size                  = 1
   min_size                  = 1
   wait_for_elb_capacity     = 1
@@ -143,7 +143,7 @@ resource "aws_security_group" "alb" {
 }
 
 resource "aws_lb" "alb" {
-  # name_prefix  "name_prefix" cannot be longer than 6 characters: "tfmh-default-" is too long! 
+  # "name_prefix": "tfmh-default-" is too long! 
   name_prefix        = format("%s-", var.project_name)
   internal           = false
   load_balancer_type = "application"

@@ -31,3 +31,9 @@ output "rtprv_ids" {
 output "alb_dns" {
   value = module.compute.alb_dns
 }
+output "alb_name" {
+  value = module.compute.alb_name
+}
+output "asg_name" {
+  value = module.compute.asg_name
+}

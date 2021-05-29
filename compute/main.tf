@@ -27,9 +27,9 @@ data "aws_ami" "amazon_linux_2" {
 
 data "template_file" "userdata" {
   template = file("${path.module}/userdata.tpl")
-#  vars = {
-#    subnet = element(var.subpub_ids, count.index)
-#  }
+  #  vars = {
+  #    subnet = element(var.subpub_ids, count.index)
+  #  }
 }
 
 #-- ec2 with auto-scaling and load balancer
@@ -38,37 +38,37 @@ resource "aws_launch_configuration" "webapp" {
     create_before_destroy = true
   }
 
-  name_prefix   = "${terraform.workspace}-webapp-"
+  name_prefix   = format("%s-${terraform.workspace}-", var.project_name)
   image_id      = data.aws_ami.amazon_linux_2.id
   instance_type = var.instance_type
   key_name      = aws_key_pair.keypair.id
 
   security_groups = [var.sg_id]
 
-  user_data = data.template_file.userdata.rendered
+  user_data                   = data.template_file.userdata.rendered
   associate_public_ip_address = false
 }
 
 resource "aws_autoscaling_group" "asg" {
-  depends_on                = [aws_launch_configuration.webapp]
+  depends_on = [aws_launch_configuration.webapp]
   lifecycle {
     create_before_destroy = true
   }
 
-  vpc_zone_identifier   = var.subpub_ids
-  name                  = "asg-${terraform.workspace}"
-  max_size              = 1
-  min_size              = 1
-  wait_for_elb_capacity = 1
-  desired_capacity      = 1
+  vpc_zone_identifier       = var.subpub_ids
+  name_prefix               = format("%s-${terraform.workspace}-", var.project_name)
+  max_size                  = 1
+  min_size                  = 1
+  wait_for_elb_capacity     = 1
+  desired_capacity          = 1
   health_check_grace_period = 300
-  force_delete          = true
-  launch_configuration  = aws_launch_configuration.webapp.id
-  target_group_arns     = [aws_alb_target_group.albtargetgrp.arn]
+  force_delete              = true
+  launch_configuration      = aws_launch_configuration.webapp.id
+  target_group_arns         = [aws_alb_target_group.albtargetgrp.arn]
 }
 
 resource "aws_autoscaling_policy" "scale_up" {
-  name                   = "asg_scale_up-${terraform.workspace}"
+  name                   = "tfmh-asg_scale_up-${terraform.workspace}"
   scaling_adjustment     = 2
   adjustment_type        = "ChangeInCapacity"
   cooldown               = 300
@@ -76,7 +76,7 @@ resource "aws_autoscaling_policy" "scale_up" {
 }
 
 resource "aws_cloudwatch_metric_alarm" "scale_up_alarm" {
-  alarm_name                = "high-asg-cpu-${terraform.workspace}"
+  alarm_name                = "tfmh-high-asg-cpu-${terraform.workspace}"
   comparison_operator       = "GreaterThanThreshold"
   evaluation_periods        = "2"
   metric_name               = "CPUUtilization"
@@ -124,8 +124,8 @@ resource "aws_cloudwatch_metric_alarm" "scale_down_alarm" {
 
 #--- ALB 
 resource "aws_security_group" "alb" {
-  name   = "alb"
-  vpc_id = var.vpc_id
+  name_prefix = format("%s-${terraform.workspace}-", var.project_name)
+  vpc_id      = var.vpc_id
   # Allow all inbound HTTP requests
   ingress {
     from_port   = 80
@@ -143,7 +143,8 @@ resource "aws_security_group" "alb" {
 }
 
 resource "aws_lb" "alb" {
-  name               = format("%s-alb", var.project_name)
+  # name_prefix  "name_prefix" cannot be longer than 6 characters: "tfmh-default-" is too long! 
+  name_prefix        = format("%s-", var.project_name)
   internal           = false
   load_balancer_type = "application"
   security_groups    = [aws_security_group.alb.id]

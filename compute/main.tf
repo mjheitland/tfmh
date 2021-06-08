@@ -113,8 +113,10 @@ resource "aws_launch_configuration" "asg" {
 
   user_data = <<EOF
 #!/bin/bash
-sudo aws s3 cp s3://${var.config_bucket_name}/ ./ --recursive
-sudo chmod +x user_data.sh
+# user data runs under root account and starts in /!
+cd /usr/local/bin
+aws s3 cp s3://${var.config_bucket_name}/ ./ --recursive
+chmod +x user_data.sh
 ./user_data.sh
   EOF
 }

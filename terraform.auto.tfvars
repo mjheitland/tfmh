@@ -1,8 +1,8 @@
 #--- general
 project_name = "tfmh"
 region       = "eu-west-1"
-# bucket         = "tfstate-tfstate-094033154904-eu-central-1"
-# dynamodb_table = "tfstate-tfstate-eu-central-1"
+# bucket         = "tfmh-tfstate-094033154904-eu-west-1"
+# dynamodb_table = "tfmh-tfstate-eu-west-1"
 
 #--- networking
 vpc_cidr = "10.50.0.0/16"
@@ -27,6 +27,7 @@ service_ports = [
 ]
 
 #--- compute
-key_name        = "tfmh_key"
-public_key_path = "./id_rsa.pub"
-instance_type   = "t2.micro"
+config_bucket_name = "tfmh-config-094033154904-eu-west-1"
+key_name           = "tfmh_key"
+public_key_path    = "./id_rsa.pub"
+instance_type      = "t2.micro"

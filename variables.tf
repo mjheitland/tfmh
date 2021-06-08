@@ -32,10 +32,6 @@ variable "service_ports" {
 }
 
 #-------compute variables
-variable "config_bucket_name" {
-  description = "name of config bucket"
-  type        = string
-}
 variable "key_name" {
   description = "name of keypair to access ec2 instances"
   type        = string

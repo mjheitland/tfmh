@@ -27,7 +27,6 @@ service_ports = [
 ]
 
 #--- compute
-config_bucket_name = "tfmh-config-094033154904-eu-west-1"
 key_name           = "tfmh_key"
 public_key_path    = "./id_rsa.pub"
 instance_type      = "t2.micro"

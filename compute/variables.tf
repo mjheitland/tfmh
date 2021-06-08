@@ -1,7 +1,3 @@
-variable "config_bucket_name" {
-  description = "name of config bucket"
-  type        = string
-}
 variable "region" {
   description = "AWS region"
   type        = string

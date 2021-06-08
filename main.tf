@@ -18,7 +18,6 @@ module "compute" {
 
   region             = var.region
   project_name       = var.project_name
-  config_bucket_name = var.config_bucket_name
   key_name           = var.key_name
   public_key_path    = var.public_key_path
   instance_type      = var.instance_type

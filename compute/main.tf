@@ -1,6 +1,15 @@
-#--- S3 config bucket (contains additional user data to overcome 16k limit for user data)
-resource "aws_s3_bucket_public_access_block" "config" {
-  bucket = aws_s3_bucket.config.id
+#--- S3 user_data bucket (contains additional user data to overcome 16k limit for user data)
+data "aws_caller_identity" "current" {}
+
+locals {
+  account_id = data.aws_caller_identity.current.account_id
+  user_data_bucket_name = "${var.project_name}-user-data-${local.account_id}"
+  user_data_file_name = "user_data.sh"
+  user_data_s3_key = "user_data/${terraform.workspace}/${var.region}/${local.user_data_file_name}"
+}
+
+resource "aws_s3_bucket_public_access_block" "user_data" {
+  bucket = aws_s3_bucket.user_data.id
 
   # Whether Amazon S3 should block public bucket policies for this bucket. Defaults to false. 
   # Enabling this setting does not affect the existing bucket policy. When set to true causes Amazon S3 to:
@@ -24,8 +33,8 @@ resource "aws_s3_bucket_public_access_block" "config" {
   restrict_public_buckets = true
 }
 
-resource "aws_s3_bucket" "config" {
-  bucket = var.config_bucket_name
+resource "aws_s3_bucket" "user_data" {
+  bucket = local.user_data_bucket_name
 
   # The canned ACL to apply. Defaults to "private". Conflicts with grant.
   # "private": Owner gets FULL_CONTROL. No one else has access rights (default).
@@ -59,11 +68,10 @@ resource "aws_s3_bucket" "config" {
 }
 
 resource "aws_s3_bucket_object" "user_data" {
-  bucket   = aws_s3_bucket.config.id
-  for_each = fileset("${path.module}/config/", "*")
-  key      = each.value
-  source   = "${path.module}/config/${each.value}"
-  etag     = filemd5("${path.module}/config/${each.value}") 
+  bucket   = aws_s3_bucket.user_data.id
+  key      = local.user_data_s3_key
+  source   = "${path.module}/scripts/${local.user_data_file_name}"
+  etag     = filemd5("${path.module}/scripts/${local.user_data_file_name}") 
 }
 
 
@@ -115,10 +123,10 @@ resource "aws_launch_configuration" "asg" {
 #!/bin/bash
 # user data runs under root account and starts in /!
 cd /usr/local/bin
-aws s3 cp s3://${var.config_bucket_name}/ ./ --recursive
-chmod +x user_data.sh
-sed -i '1,$s/$TF_INSTANCE_TYPE/${var.instance_type}/g' ./user_data.sh
-./user_data.sh
+aws s3 cp "s3://${local.user_data_bucket_name}/${local.user_data_s3_key}" ${local.user_data_file_name}
+chmod +x ${local.user_data_file_name}
+sed -i '1,$s/$TF_INSTANCE_TYPE/${var.instance_type}/g' ./${local.user_data_file_name}
+./${local.user_data_file_name}
   EOF
 }
 
@@ -169,8 +177,8 @@ resource "aws_iam_role_policy" "asg" {
         ],
         "Effect": "Allow",
         "Resource": [
-                "arn:aws:s3:::${var.config_bucket_name}",
-                "arn:aws:s3:::${var.config_bucket_name}/*"
+                "arn:aws:s3:::${local.user_data_bucket_name}",
+                "arn:aws:s3:::${local.user_data_bucket_name}/*"
             ]
       }
     ]

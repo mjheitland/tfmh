@@ -117,6 +117,7 @@ resource "aws_launch_configuration" "asg" {
 cd /usr/local/bin
 aws s3 cp s3://${var.config_bucket_name}/ ./ --recursive
 chmod +x user_data.sh
+sed -i '1,$s/$TF_INSTANCE_TYPE/${var.instance_type}/g' ./user_data.sh
 ./user_data.sh
   EOF
 }

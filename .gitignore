@@ -1,6 +1,5 @@
 .DS_Store
 *.swp
 
-.terraform.lock.hcl
-.terraform
+.terraform*
 terraform.tfstate*

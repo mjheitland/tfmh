@@ -3,9 +3,14 @@ data "aws_caller_identity" "current" {}
 
 locals {
   account_id = data.aws_caller_identity.current.account_id
+
   user_data_bucket_name = "${var.project_name}-user-data-${local.account_id}"
-  user_data_file_name = "user_data.sh"
-  user_data_s3_key = "user_data/${terraform.workspace}/${var.region}/${local.user_data_file_name}"
+
+  user_data_file_name_linux = "user_data.sh"
+  user_data_s3_key_linux = "user_data/${terraform.workspace}/${var.region}/${local.user_data_file_name_linux}"
+
+  user_data_file_name_windows = "user_data.ps1"
+  user_data_s3_key_windows = "user_data/${terraform.workspace}/${var.region}/${local.user_data_file_name_windows}"
 }
 
 resource "aws_s3_bucket_public_access_block" "user_data" {
@@ -67,13 +72,19 @@ resource "aws_s3_bucket" "user_data" {
   }
 }
 
-resource "aws_s3_bucket_object" "user_data" {
+resource "aws_s3_bucket_object" "user_data_linux" {
   bucket   = aws_s3_bucket.user_data.id
-  key      = local.user_data_s3_key
-  source   = "${path.module}/scripts/${local.user_data_file_name}"
-  etag     = filemd5("${path.module}/scripts/${local.user_data_file_name}") 
+  key      = local.user_data_s3_key_linux
+  source   = "${path.module}/scripts/${local.user_data_file_name_linux}"
+  etag     = filemd5("${path.module}/scripts/${local.user_data_file_name_linux}") 
 }
 
+resource "aws_s3_bucket_object" "user_data_windows" {
+  bucket   = aws_s3_bucket.user_data.id
+  key      = local.user_data_s3_key_windows
+  source   = "${path.module}/scripts/${local.user_data_file_name_windows}"
+  etag     = filemd5("${path.module}/scripts/${local.user_data_file_name_windows}") 
+}
 
 #--- EC2 
 
@@ -123,10 +134,10 @@ resource "aws_launch_configuration" "asg" {
 #!/bin/bash
 # user data runs under root account and starts in /!
 cd /usr/local/bin
-aws s3 cp "s3://${local.user_data_bucket_name}/${local.user_data_s3_key}" ${local.user_data_file_name}
-chmod +x ${local.user_data_file_name}
-sed -i '1,$s/$TF_INSTANCE_TYPE/${var.instance_type}/g' ./${local.user_data_file_name}
-./${local.user_data_file_name}
+aws s3 cp "s3://${local.user_data_bucket_name}/${local.user_data_s3_key_linux}" ${local.user_data_file_name_linux}
+chmod +x ${local.user_data_file_name_linux}
+sed -i '1,$s/$TF_INSTANCE_TYPE/${var.instance_type}/g' ./${local.user_data_file_name_linux}
+./${local.user_data_file_name_linux}
   EOF
 }
 
@@ -190,7 +201,11 @@ resource "aws_iam_role_policy" "asg" {
 #--- Auto-Scaling
 
 resource "aws_autoscaling_group" "asg" {
-  depends_on = [aws_launch_configuration.asg]
+  depends_on = [
+    aws_launch_configuration.asg,
+    aws_s3_bucket_object.user_data_linux
+  ]
+
   lifecycle {
     create_before_destroy = true
   }
@@ -339,4 +354,61 @@ resource "aws_alb_target_group" "albtargetgrp" {
 resource "aws_autoscaling_attachment" "asgattachment" {
   autoscaling_group_name = aws_autoscaling_group.asg.id
   alb_target_group_arn   = aws_alb_target_group.albtargetgrp.arn
+}
+
+
+#--- EC2 Windows
+
+data "aws_ami" "amazon_windows" {
+  most_recent = true
+  owners = ["amazon"]
+  filter {
+    name   = "name"
+    values = ["Windows_Server-2019-English-Full-Base*"]
+  }
+  filter {
+      name   = "root-device-type"
+      values = ["ebs"]
+    }
+  filter {
+    name   = "virtualization-type"
+    values = ["hvm"]
+  }  
+}  
+
+resource "aws_iam_instance_profile" "windows_profile" {
+  name = "windows_profile"
+  role = aws_iam_role.asg.name
+}
+
+resource "aws_instance" "windows" {
+  depends_on = [aws_s3_bucket_object.user_data_windows]
+
+  instance_type           = "t3.micro"
+  ami                     = data.aws_ami.amazon_windows.id
+  key_name                = aws_key_pair.keypair.id
+  subnet_id               = var.subpub_ids[0]
+  vpc_security_group_ids  = [var.sg_id]
+  iam_instance_profile    = aws_iam_instance_profile.windows_profile.name
+  tags = { 
+    Name = format("%s_windows", var.project_name)
+    project = var.project_name
+  }
+  user_data = <<EOF
+    <powershell>
+
+# go to c:\windows\temp
+cd ($env:SystemRoot + "\Temp\)
+
+# aws s3 cp "s3://tfmh-user-data-094033154904/user_data/default/eu-west-1/user_data.sh
+aws s3 cp "s3://${local.user_data_bucket_name}/${local.user_data_s3_key_windows}" ${local.user_data_file_name_windows}
+
+# resolve TF vars
+(Get-Content ${local.user_data_file_name_windows}).replace('$TF_INSTANCE_TYPE', '${var.instance_type}') | Set-Content ${local.user_data_file_name_windows}
+
+# execute user data script
+./${local.user_data_file_name_windows}
+
+    </powershell>
+  EOF
 }

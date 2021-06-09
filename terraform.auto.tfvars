@@ -23,6 +23,10 @@ service_ports = [
   { # web http
     from_port = 80,
     to_port   = 80
+  },
+  { # MS Windows rdp
+    from_port = 3389,
+    to_port   = 3389
   }
 ]
 

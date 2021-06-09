@@ -398,13 +398,21 @@ resource "aws_instance" "windows" {
     <powershell>
 
 # go to c:\windows\temp
-cd ($env:SystemRoot + "\Temp\)
+$temp = ($env:SystemRoot + "\Temp")
+cd $temp
 
-# aws s3 cp "s3://tfmh-user-data-094033154904/user_data/default/eu-west-1/user_data.sh
-aws s3 cp "s3://${local.user_data_bucket_name}/${local.user_data_s3_key_windows}" ${local.user_data_file_name_windows}
+# Copy-S3Object -BucketName tfmh-user-data-094033154904 -Key $user_data/default/eu-west-1/user_data.sh -LocalFile c:\windows\temp\user_data.sh
+$userDataFilePath = "$temp/${local.user_data_file_name_windows}"
+Copy-S3Object -BucketName ${local.user_data_bucket_name} -Key ${local.user_data_s3_key_windows} -LocalFile $userDataFilePath
 
 # resolve TF vars
-(Get-Content ${local.user_data_file_name_windows}).replace('$TF_INSTANCE_TYPE', '${var.instance_type}') | Set-Content ${local.user_data_file_name_windows}
+$contentOld = (Get-Content ${local.user_data_file_name_windows})
+
+$contentNew = $contentOld.
+Replace('$TF_REGION', '${var.region}').
+Replace('$TF_INSTANCE_TYPE', '${var.instance_type}')
+
+Set-Content -Value $contentNew -Path ${local.user_data_file_name_windows}
 
 # execute user data script
 ./${local.user_data_file_name_windows}

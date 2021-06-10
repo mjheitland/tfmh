@@ -1,4 +1,11 @@
-#--- S3 user_data bucket (contains additional user data to overcome 16k limit for user data)
+#--- S3 user_data bucket in secondary region (contains additional user data to overcome 16k limit for user data)
+
+# secondary region: eu-west-2
+provider "aws" {
+  alias  = "eu-west-2"
+  region = local.user_data_bucket_region
+}
+
 data "aws_caller_identity" "current" {}
 
 locals {
@@ -39,12 +46,6 @@ resource "aws_s3_bucket_public_access_block" "user_data" {
   # including non-public delegation to specific accounts, is blocked. When set to true:
   # Only the bucket owner and AWS Services can access this buckets if it has a public policy.
   restrict_public_buckets = true
-}
-
-# secondary region: eu-west-2
-provider "aws" {
-  alias  = "eu-west-2"
-  region = local.user_data_bucket_region
 }
 
 resource "aws_s3_bucket" "user_data" {

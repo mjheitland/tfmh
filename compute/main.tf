@@ -147,7 +147,7 @@ resource "aws_launch_configuration" "asg" {
 #!/bin/bash
 # user data runs under root account and starts in /!
 cd /usr/local/bin
-aws s3 cp -region ${local.user_data_bucket_region} "s3://${local.user_data_bucket_name}/${local.user_data_s3_key_linux}" ${local.user_data_file_name_linux}
+aws s3 cp --source-region ${local.user_data_bucket_region} "s3://${local.user_data_bucket_name}/${local.user_data_s3_key_linux}" "${local.user_data_file_name_linux}"
 chmod +x ${local.user_data_file_name_linux}
 sed -i '1,$s/$TF_INSTANCE_TYPE/${var.instance_type}/g' ./${local.user_data_file_name_linux}
 ./${local.user_data_file_name_linux}

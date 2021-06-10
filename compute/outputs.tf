@@ -10,3 +10,7 @@ output "alb_name" {
 output "asg_name" {
   value = aws_autoscaling_group.asg.name
 }
+
+output "ec2_windows" {
+  value = aws_instance.windows.id
+}

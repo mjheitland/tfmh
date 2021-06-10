@@ -37,3 +37,6 @@ output "alb_name" {
 output "asg_name" {
   value = module.compute.asg_name
 }
+output "ec2_windows" {
+  value = module.compute.ec2_windows
+}

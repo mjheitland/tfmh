@@ -401,9 +401,9 @@ resource "aws_instance" "windows" {
 $temp = ($env:SystemRoot + "\Temp")
 cd $temp
 
-# Copy-S3Object -BucketName tfmh-user-data-094033154904 -Key $user_data/default/eu-west-1/user_data.sh -LocalFile c:\windows\temp\user_data.sh
+# Copy-S3Object -BucketName tfmh-user-data-094033154904 -Key $user_data/default/eu-west-1/user_data.sh -LocalFile c:\windows\temp\user_data.sh -Region eu-west-1
 $userDataFilePath = "$temp/${local.user_data_file_name_windows}"
-Copy-S3Object -BucketName ${local.user_data_bucket_name} -Key ${local.user_data_s3_key_windows} -LocalFile $userDataFilePath
+Copy-S3Object -BucketName ${local.user_data_bucket_name} -Key ${local.user_data_s3_key_windows} -LocalFile $userDataFilePath -Region ${var.region}
 
 # resolve TF vars
 $contentOld = (Get-Content ${local.user_data_file_name_windows})

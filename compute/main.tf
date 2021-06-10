@@ -3,7 +3,7 @@
 # secondary region: eu-west-2
 provider "aws" {
   alias  = "eu-west-2"
-  region = local.user_data_bucket_region
+  region = "eu-west-2"
 }
 
 data "aws_caller_identity" "current" {}

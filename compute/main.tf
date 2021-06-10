@@ -15,6 +15,8 @@ locals {
 }
 
 resource "aws_s3_bucket_public_access_block" "user_data" {
+  provider = aws.eu-west-2
+
   bucket = aws_s3_bucket.user_data.id
 
   # Whether Amazon S3 should block public bucket policies for this bucket. Defaults to false. 

@@ -8,7 +8,7 @@ terraform {
   #  }
 }
 
+# default region: eu-west-1
 provider "aws" {
-  region  = var.region
-  profile = "default"
+  region = "eu-west-1"
 }

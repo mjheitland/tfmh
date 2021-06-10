@@ -4,7 +4,8 @@ data "aws_caller_identity" "current" {}
 locals {
   account_id = data.aws_caller_identity.current.account_id
 
-  user_data_bucket_name = "${var.project_name}-user-data-${local.account_id}"
+  user_data_bucket_name = "${var.project_name}-userdata-${local.account_id}"
+  user_data_bucket_region = "eu-west-2"
 
   user_data_file_name_linux = "user_data.sh"
   user_data_s3_key_linux = "user_data/${terraform.workspace}/${var.region}/${local.user_data_file_name_linux}"
@@ -38,7 +39,15 @@ resource "aws_s3_bucket_public_access_block" "user_data" {
   restrict_public_buckets = true
 }
 
+# secondary region: eu-west-2
+provider "aws" {
+  alias  = "eu-west-2"
+  region = local.user_data_bucket_region
+}
+
 resource "aws_s3_bucket" "user_data" {
+  provider = aws.eu-west-2
+
   bucket = local.user_data_bucket_name
 
   # The canned ACL to apply. Defaults to "private". Conflicts with grant.
@@ -73,6 +82,8 @@ resource "aws_s3_bucket" "user_data" {
 }
 
 resource "aws_s3_bucket_object" "user_data_linux" {
+  provider = aws.eu-west-2
+
   bucket   = aws_s3_bucket.user_data.id
   key      = local.user_data_s3_key_linux
   source   = "${path.module}/scripts/${local.user_data_file_name_linux}"
@@ -80,6 +91,8 @@ resource "aws_s3_bucket_object" "user_data_linux" {
 }
 
 resource "aws_s3_bucket_object" "user_data_windows" {
+  provider = aws.eu-west-2
+
   bucket   = aws_s3_bucket.user_data.id
   key      = local.user_data_s3_key_windows
   source   = "${path.module}/scripts/${local.user_data_file_name_windows}"
@@ -134,7 +147,7 @@ resource "aws_launch_configuration" "asg" {
 #!/bin/bash
 # user data runs under root account and starts in /!
 cd /usr/local/bin
-aws s3 cp "s3://${local.user_data_bucket_name}/${local.user_data_s3_key_linux}" ${local.user_data_file_name_linux}
+aws s3 cp -region ${local.user_data_bucket_region} "s3://${local.user_data_bucket_name}/${local.user_data_s3_key_linux}" ${local.user_data_file_name_linux}
 chmod +x ${local.user_data_file_name_linux}
 sed -i '1,$s/$TF_INSTANCE_TYPE/${var.instance_type}/g' ./${local.user_data_file_name_linux}
 ./${local.user_data_file_name_linux}
@@ -224,12 +237,12 @@ resource "aws_autoscaling_group" "asg" {
   tags = [
     {
       "key"                 = "Name"
-      "value"               = format("%s_ec2", var.project_name)
+      "value"               = format("%s_linux", var.project_name)
       "propagate_at_launch" = true
     },
     {
       "key"                 = "project_name"
-      "value"               = format("%s_ec2", var.project_name)
+      "value"               = format("%s", var.project_name)
       "propagate_at_launch" = true
     }
   ]
@@ -401,9 +414,9 @@ resource "aws_instance" "windows" {
 $temp = ($env:SystemRoot + "\Temp")
 cd $temp
 
-# Copy-S3Object -BucketName tfmh-user-data-094033154904 -Key $user_data/default/eu-west-1/user_data.sh -LocalFile c:\windows\temp\user_data.sh -Region eu-west-1
+# Copy-S3Object -BucketName tfmh-user-data-094033154904 -Key $user_data/default/eu-west-1/user_data.sh -LocalFile c:\windows\temp\user_data.sh -Region eu-west-2
 $userDataFilePath = "$temp/${local.user_data_file_name_windows}"
-Copy-S3Object -BucketName ${local.user_data_bucket_name} -Key ${local.user_data_s3_key_windows} -LocalFile $userDataFilePath -Region ${var.region}
+Copy-S3Object -BucketName ${local.user_data_bucket_name} -Key ${local.user_data_s3_key_windows} -LocalFile $userDataFilePath -Region ${local.user_data_bucket_region}
 
 # resolve TF vars
 $contentOld = (Get-Content ${local.user_data_file_name_windows})

@@ -14,3 +14,7 @@ output "asg_name" {
 output "ec2_windows" {
   value = aws_instance.windows.id
 }
+
+output "user_data" {
+  value = data.template_file.user_data_windows.rendered
+}

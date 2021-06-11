@@ -40,3 +40,6 @@ output "asg_name" {
 output "ec2_windows" {
   value = module.compute.ec2_windows
 }
+output "user_data" {
+  value = module.compute.user_data
+}

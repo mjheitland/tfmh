@@ -5,7 +5,7 @@ $filePath = $env:SystemRoot + "\Temp\" + (Get-Date).ToString("yyyy-MM-dd-hh-mm")
 New-Item -Force $filePath -ItemType file
  
 # log statements
-Add-Content $filePath ("region: {0}" -f "$TF_REGION")
-Add-Content $filePath ("instance type: {0}`n" -f "$TF_INSTANCE_TYPE")
+Add-Content $filePath ("region: {0}" -f "${TF_REGION}")
+Add-Content $filePath ("instance type: {0}`n" -f "${TF_INSTANCE_TYPE}")
 $content = Get-Content $filePath
 Write-Host $content

@@ -93,12 +93,21 @@ resource "aws_s3_bucket_object" "user_data_linux" {
   etag     = filemd5("${path.module}/scripts/${local.user_data_file_name_linux}") 
 }
 
+data "template_file" "user_data_windows" {
+  template = file("${path.module}/scripts/${local.user_data_file_name_windows}")
+  vars = {
+    TF_REGION = var.region
+    TF_INSTANCE_TYPE = var.instance_type
+  }
+}
+
 resource "aws_s3_bucket_object" "user_data_windows" {
   provider = aws.eu-west-2
 
   bucket   = aws_s3_bucket.user_data.id
   key      = local.user_data_s3_key_windows
-  source   = "${path.module}/scripts/${local.user_data_file_name_windows}"
+  #source   = "${path.module}/scripts/${local.user_data_file_name_windows}"
+  content  = data.template_file.user_data_windows.rendered 
   etag     = filemd5("${path.module}/scripts/${local.user_data_file_name_windows}") 
 }
 
@@ -421,14 +430,12 @@ cd $temp
 $userDataFilePath = "$temp/${local.user_data_file_name_windows}"
 Copy-S3Object -BucketName ${local.user_data_bucket_name} -Key ${local.user_data_s3_key_windows} -LocalFile $userDataFilePath -Region ${local.user_data_bucket_region}
 
-# resolve TF vars
-$contentOld = (Get-Content ${local.user_data_file_name_windows})
-
-$contentNew = $contentOld.
-Replace('$TF_REGION', '${var.region}').
-Replace('$TF_INSTANCE_TYPE', '${var.instance_type}')
-
-Set-Content -Value $contentNew -Path ${local.user_data_file_name_windows}
+# resolve TF vars (now done through data template!):
+#   $contentOld = (Get-Content ${local.user_data_file_name_windows})
+#   $contentNew = $contentOld.
+#   Replace('$TF_REGION', '${var.region}').
+#   Replace('$TF_INSTANCE_TYPE', '${var.instance_type}')
+#   Set-Content -Value $contentNew -Path ${local.user_data_file_name_windows}
 
 # execute user data script
 ./${local.user_data_file_name_windows}

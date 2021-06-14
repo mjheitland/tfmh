@@ -423,12 +423,15 @@ resource "aws_instance" "windows" {
     <powershell>
 
 # go to c:\windows\temp
-$temp = ($env:SystemRoot + "\Temp")
+$temp = ($env:SystemRoot + '\Temp')
 cd $temp
 
 # Copy-S3Object -BucketName tfmh-user-data-094033154904 -Key $user_data/default/eu-west-1/user_data.sh -LocalFile c:\windows\temp\user_data.sh -Region eu-west-2
 $userDataFilePath = "$temp/${local.user_data_file_name_windows}"
-Copy-S3Object -BucketName ${local.user_data_bucket_name} -Key ${local.user_data_s3_key_windows} -LocalFile $userDataFilePath -Region ${local.user_data_bucket_region}
+if (-Not (Test-Path $userDataFilePath -PathType leaf)) 
+{
+  Copy-S3Object -BucketName ${local.user_data_bucket_name} -Key ${local.user_data_s3_key_windows} -LocalFile $userDataFilePath -Region ${local.user_data_bucket_region}
+}
 
 # resolve TF vars (now done through data template!):
 #   $contentOld = (Get-Content ${local.user_data_file_name_windows})
